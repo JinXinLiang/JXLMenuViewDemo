@@ -38,6 +38,7 @@
         
         self.centerViewArray = [NSMutableArray array];
         _menuWith = 100.f;
+        _menuCount = 0;
         
         self.titleColor = [UIColor grayColor];
         self.titleSelectedColor = [UIColor blackColor];
@@ -79,27 +80,34 @@
         _menuTitleCollectionView.delegate = self;
         
         [self.centerViewArray removeAllObjects];
-        
-        _menuCount = [self.delegate numberOfRowsInMenuView:self];
-        for (NSInteger count = 0; count < _menuCount; count++) {
+        if ([self.delegate respondsToSelector:@selector(numberOfRowsInMenuView:)]) {
             
-            UIView *centerView = [self.delegate menuView:self centerViewForIndex:count];
-            // centerView为空，抛出异常
-            if (nil == centerView) {
-                NSException *exception = [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"JXLMenuView:%@ failed to obtain a centerView from its delegate", self] userInfo:nil];
-                @throw exception;
+            if ([self.delegate respondsToSelector:@selector(menuView:centerViewForIndex:)]) {
+                
+                _menuCount = [self.delegate numberOfRowsInMenuView:self];
+                for (NSInteger count = 0; count < _menuCount; count++) {
+                    
+                    UIView *centerView = [self.delegate menuView:self centerViewForIndex:count];
+                    
+                    // centerView为空，抛出异常
+                    if (nil == centerView) {
+                        NSException *exception = [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"JXLMenuView:%@ failed to obtain a centerView from its delegate", self] userInfo:nil];
+                        @throw exception;
+                    }
+                    
+                    [self.centerViewArray addObject:centerView];
+                    
+                    centerView.frame = CGRectMake(_menuTitleCollectionView.frame.origin.x + _menuTitleCollectionView.frame.size.width, _menuTitleCollectionView.frame.origin.y, self.frame.size.width - _menuTitleCollectionView.frame.origin.x - _menuTitleCollectionView.frame.size.width, self.frame.size.height);
+                    
+                }
+                
+                // 设置menuView默认选中
+                NSIndexPath *defaultSelectedIndexPath = [NSIndexPath indexPathForItem:0 inSection:0];
+                [_menuTitleCollectionView selectItemAtIndexPath:defaultSelectedIndexPath animated:NO scrollPosition:UICollectionViewScrollPositionNone];
+                [_menuTitleCollectionView.delegate collectionView:_menuTitleCollectionView didSelectItemAtIndexPath:defaultSelectedIndexPath];
+                
             }
-            
-            [self.centerViewArray addObject:centerView];
-            
-            centerView.frame = CGRectMake(_menuTitleCollectionView.frame.origin.x + _menuTitleCollectionView.frame.size.width, _menuTitleCollectionView.frame.origin.y, self.frame.size.width - _menuTitleCollectionView.frame.origin.x - _menuTitleCollectionView.frame.size.width, self.frame.size.height);
-            
         }
-        
-        // 设置menuView默认选中
-        NSIndexPath *defaultSelectedIndexPath = [NSIndexPath indexPathForItem:0 inSection:0];
-        [_menuTitleCollectionView selectItemAtIndexPath:defaultSelectedIndexPath animated:NO scrollPosition:UICollectionViewScrollPositionNone];
-        [_menuTitleCollectionView.delegate collectionView:_menuTitleCollectionView didSelectItemAtIndexPath:defaultSelectedIndexPath];
         
     }
     
@@ -119,33 +127,40 @@
     cell.titleColor = self.titleColor;
     cell.titleSelectedColor = self.titleSelectedColor;
     
-    cell.menuTitleLabel.text = [self.delegate menuView:self titleOfRow:indexPath.item];
+    if ([self.delegate respondsToSelector:@selector(menuView:titleOfRow:)]) {
+        cell.menuTitleLabel.text = [self.delegate menuView:self titleOfRow:indexPath.item];
+    }
     
     return cell;
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     
-    if (![_selectedIndexPath isEqual:indexPath]) {
+    if ([self.delegate respondsToSelector:@selector(menuView:centerViewForIndex:)]) {
         
-        if (self.centerView != nil) {
-            [_centerView removeFromSuperview];
-            _centerView = nil;
+        if (![_selectedIndexPath isEqual:indexPath]) {
+            
+            if (self.centerView != nil) {
+                [_centerView removeFromSuperview];
+                _centerView = nil;
+            }
+            
+            UIView *centerView = self.centerViewArray[indexPath.item];
+            if (centerView.frame.size.width != _menuWith) {
+                centerView.frame = CGRectMake(_menuTitleCollectionView.frame.origin.x + _menuTitleCollectionView.frame.size.width, _menuTitleCollectionView.frame.origin.y, self.frame.size.width - _menuTitleCollectionView.frame.origin.x - _menuTitleCollectionView.frame.size.width, self.frame.size.height);
+            }
+            [self addSubview:centerView];
+            _centerView = centerView;
+            
+            
+            if ([self.delegate respondsToSelector:@selector(menuView:didSelectRowAtIndex:)]) {
+                [self.delegate menuView:self didSelectRowAtIndex:indexPath.item];
+            }
+            self.selectedIndexPath = indexPath;
         }
         
-        UIView *centerView = self.centerViewArray[indexPath.item];
-        if (centerView.frame.size.width != _menuWith) {
-            centerView.frame = CGRectMake(_menuTitleCollectionView.frame.origin.x + _menuTitleCollectionView.frame.size.width, _menuTitleCollectionView.frame.origin.y, self.frame.size.width - _menuTitleCollectionView.frame.origin.x - _menuTitleCollectionView.frame.size.width, self.frame.size.height);
-        }
-        [self addSubview:centerView];
-        _centerView = centerView;
-        
-        
-        if ([self.delegate respondsToSelector:@selector(menuView:didSelectRowAtIndex:)]) {
-            [self.delegate menuView:self didSelectRowAtIndex:indexPath.item];
-        }
-        self.selectedIndexPath = indexPath;
     }
+    
     
 }
 

@@ -53,6 +53,7 @@
 
 #pragma mark -
 #pragma mark JXLMenuDelegate
+#pragma mark @required
 
 - (NSInteger)numberOfRowsInMenuView:(JXLMenuView *)menuView {
     return self.titles.count;
@@ -76,6 +77,11 @@
 }
 
 
+#pragma mark @optional
+
+- (CGFloat)menuView:(JXLMenuView *)menuView heightForRow:(NSInteger)menuIndex {
+    return 65.f;
+}
 
 - (void)menuView:(JXLMenuView *)menuView didSelectRowAtIndex:(NSInteger)menuIndex {
     // You can get centerView use menuView.centerView
