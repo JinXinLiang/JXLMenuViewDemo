@@ -67,7 +67,7 @@
 - (UIView *)menuView:(JXLMenuView *)menuView centerViewForIndex:(NSInteger)menuIndex {
     
     
-    UIView *view = [[UIView alloc] init];
+    UIView *view = [[UIView alloc] initWithFrame:self.view.bounds];
     view.backgroundColor = [UIColor redColor];
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(80, 100, 190, 50)];
     label.backgroundColor = [UIColor yellowColor];
